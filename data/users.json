@@ -1,0 +1,26 @@
+[
+  {
+    "_id": "60d0fe4f5311236168a109ca",
+    "name": "Admin User",
+    "email": "jageshwarsahu910@gmail.com",
+    "password": "$2b$10$msrWepELG0OXpqvYn9K27.078B.y1tRffFhbhb25EaWoOa6hCSH0K",
+    "isAdmin": true,
+    "createdAt": "2025-05-25T15:56:25.116Z"
+  },
+  {
+    "_id": "60d0fe4f5311236168a109cb",
+    "name": "Test User",
+    "email": "test@example.com",
+    "password": "$2b$10$msrWepELG0OXpqvYn9K27.pBZ7lkuqO4P6lkITQJTLycl9/F5c8bC",
+    "isAdmin": false,
+    "createdAt": "2025-05-25T15:56:25.203Z"
+  },
+  {
+    "_id": "user_1748189187881",
+    "name": "Chitresh Yadav",
+    "email": "csy24022004@gmail.com",
+    "password": "$2b$10$awPrbnEiNyicJucMuNizwutuf26/XsV8vkyvj8n/HruiWFRTGJGIW",
+    "isAdmin": false,
+    "createdAt": "2025-05-25T16:06:27.881Z"
+  }
+]
