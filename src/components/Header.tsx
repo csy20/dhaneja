@@ -28,7 +28,7 @@ const Header = () => {
               Sarees
             </Link>
             <Link href="/products/category/mens" className="text-gray-600 hover:text-indigo-600 transition-colors">
-              Men's Clothing
+              Men&apos;s Clothing
             </Link>
             <Link href="/products/category/kids" className="text-gray-600 hover:text-indigo-600 transition-colors">
               Kids

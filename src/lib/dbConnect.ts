@@ -25,7 +25,7 @@ declare global {
 
 // Store a reference to the cached connection
 const globalMongoose = global as unknown as { mongoose?: MongooseCache };
-let cached: MongooseCache = globalMongoose.mongoose || { conn: null, promise: null };
+const cached: MongooseCache = globalMongoose.mongoose || { conn: null, promise: null };
 
 // Set the global mongoose cache if it doesn't exist
 if (!globalMongoose.mongoose) {
@@ -47,6 +47,11 @@ async function dbConnect(): Promise<typeof mongoose> {
     bufferCommands: false,
     useNewUrlParser: true,
     useUnifiedTopology: true,
+    autoIndex: process.env.NODE_ENV !== 'production', // Don't build indexes in production
+    maxPoolSize: 10, // Maintain up to 10 socket connections
+    serverSelectionTimeoutMS: 5000, // Keep trying to send operations for 5 seconds
+    socketTimeoutMS: 45000, // Close sockets after 45 seconds of inactivity
+    family: 4 // Force IPv4
   };
 
   // Create a new connection if none exists

@@ -4,12 +4,12 @@ import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User';
 
 // This endpoint will check if admin exists, and if not, create one
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   let useMockDb = false;
   
   try {
     await dbConnect();
-  } catch (error) {
+  } catch (_error) {
     console.log('Using mock database instead of MongoDB');
     useMockDb = true;
   }

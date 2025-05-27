@@ -89,8 +89,8 @@ export const userDb = {
 // Helper to initialize mock admin user
 export async function initializeAdmin() {
   const adminEmail = process.env.ADMIN_EMAIL || 'jageshwarsahu910@gmail.com';
-  const adminPassword = 'Jaggu@29';
-  const adminName = 'Admin User';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'default_secure_password';
+  const adminName = process.env.ADMIN_NAME || 'Admin User';
   
   const existingAdmin = await userDb.findOne({ email: adminEmail });
   

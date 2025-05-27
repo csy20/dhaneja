@@ -22,5 +22,13 @@
     "password": "$2b$10$awPrbnEiNyicJucMuNizwutuf26/XsV8vkyvj8n/HruiWFRTGJGIW",
     "isAdmin": false,
     "createdAt": "2025-05-25T16:06:27.881Z"
+  },
+  {
+    "_id": "user_1748189300000",
+    "name": "Test Customer",
+    "email": "customer@example.com",
+    "password": "$2b$10$G8a0Oof/Dm6e2tCvvS8nJeleNvNzW.cDwzlxGVIQYHKGrSgGNE.lS",
+    "isAdmin": false,
+    "createdAt": "2025-05-27T10:00:00.000Z"
   }
 ]

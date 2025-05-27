@@ -6,12 +6,13 @@ import { verifyToken } from '@/lib/auth';
 // GET a specific product
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
+  const { id } = await params;
   
   try {
-    const product = await Product.findById(params.id);
+    const product = await Product.findById(id);
     
     if (!product) {
       return NextResponse.json(
@@ -33,9 +34,10 @@ export async function GET(
 // PUT update a product (admin only)
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
+  const { id } = await params;
   
   try {
     // Verify admin
@@ -59,7 +61,7 @@ export async function PUT(
     
     const productData = await request.json();
     const product = await Product.findByIdAndUpdate(
-      params.id,
+      id,
       productData,
       { new: true, runValidators: true }
     );
@@ -84,9 +86,10 @@ export async function PUT(
 // DELETE a product (admin only)
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   await dbConnect();
+  const { id } = await params;
   
   try {
     // Verify admin
@@ -108,7 +111,7 @@ export async function DELETE(
       );
     }
     
-    const product = await Product.findByIdAndDelete(params.id);
+    const product = await Product.findByIdAndDelete(id);
     
     if (!product) {
       return NextResponse.json(

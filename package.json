@@ -8,7 +8,10 @@
     "start": "next start",
     "lint": "next lint",
     "create-admin": "node scripts/createAdmin.js",
-    "create-mock-users": "node scripts/createMockUsers.js"
+    "create-mock-users": "node scripts/createMockUsers.js",
+    "vercel-build": "next build",
+    "deploy": "./deploy-to-vercel.sh",
+    "test": "echo \"No tests specified\" && exit 0"
   },
   "dependencies": {
     "axios": "^1.9.0",
@@ -21,7 +24,9 @@
     "next": "15.3.2",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-beautiful-dnd": "^13.1.1",
+    "react-dom": "^19.0.0",
+    "react-dropzone": "^14.3.8"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
@@ -32,7 +37,9 @@
     "@types/mongoose": "^5.11.96",
     "@types/node": "^20",
     "@types/react": "^19",
+    "@types/react-beautiful-dnd": "^13.1.8",
     "@types/react-dom": "^19",
+    "@types/react-dropzone": "^4.2.2",
     "eslint": "^9",
     "eslint-config-next": "15.3.2",
     "tailwindcss": "^4",

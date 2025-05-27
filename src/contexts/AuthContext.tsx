@@ -10,21 +10,31 @@ interface AuthContextType {
     isAdmin: boolean;
   } | null;
   token: string | null;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<{
+    user: {
+      id: string;
+      name: string;
+      email: string;
+      isAdmin: boolean;
+    };
+    token: string;
+  } | undefined>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   loading: boolean;
   error: string | null;
+  isUserAdmin: () => boolean; // New function to check if user is admin
 }
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
   token: null,
-  login: async () => {},
+  login: async () => undefined,
   register: async () => {},
   logout: () => {},
   loading: false,
   error: null,
+  isUserAdmin: () => false, // Default implementation
 });
 
 export const useAuth = () => useContext(AuthContext);
@@ -81,8 +91,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setToken(data.token);
       localStorage.setItem('user', JSON.stringify(data.user));
       localStorage.setItem('token', data.token);
-    } catch (err: any) {
-      setError(err.message);
+      
+      return {
+        user: data.user,
+        token: data.token
+      };
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Login failed';
+      setError(errorMessage);
+      throw err;
     } finally {
       setLoading(false);
     }
@@ -109,8 +126,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       
       // Auto login after registration
       await login(email, password);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Registration failed';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -123,8 +141,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.removeItem('token');
   };
 
+  const isUserAdmin = () => {
+    return user?.isAdmin || false;
+  };
+
   return (
-    <AuthContext.Provider value={{ user, token, login, register, logout, loading, error }}>
+    <AuthContext.Provider value={{ user, token, login, register, logout, loading, error, isUserAdmin }}>
       {children}
     </AuthContext.Provider>
   );

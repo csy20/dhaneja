@@ -204,33 +204,6 @@ export default function Home() {
           </div>
         </div>
       </section>
-      
-      {/* Newsletter Section */}
-      <section className="bg-indigo-600 py-16">
-        <div className="container mx-auto px-4">
-          <div className="max-w-xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-white mb-4">
-              Subscribe to Our Newsletter
-            </h2>
-            <p className="text-indigo-100 mb-8">
-              Stay updated with the latest trends and exclusive offers.
-            </p>
-            <form className="flex flex-wrap">
-              <input
-                type="email"
-                placeholder="Your email address"
-                className="flex-1 px-4 py-3 rounded-l-md focus:outline-none min-w-0"
-              />
-              <button
-                type="submit"
-                className="bg-gray-900 text-white px-6 py-3 rounded-r-md font-medium hover:bg-gray-800 transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
-          </div>
-        </div>
-      </section>
     </main>
   );
 }

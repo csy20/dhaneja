@@ -43,7 +43,7 @@ async function createOrUpdateAdmin() {
     console.log('Attempting to connect to MongoDB with URI:', process.env.MONGODB_URI.replace(/<db_password>/, '********'));
     
     // Extract password from URI if needed
-    let uri = process.env.MONGODB_URI;
+    const uri = process.env.MONGODB_URI;
     if (uri.includes('<db_password>')) {
       console.log('MongoDB URI contains placeholder password. Please update your .env file with the correct password.');
       process.exit(1);

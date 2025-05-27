@@ -40,7 +40,7 @@ const Footer = () => {
               </li>
               <li>
                 <Link href="/products/category/mens" className="text-gray-300 hover:text-white transition-colors">
-                  Men's Clothing
+                  Men&apos;s Clothing
                 </Link>
               </li>
               <li>
@@ -85,10 +85,10 @@ const Footer = () => {
           <div>
             <h3 className="text-lg font-semibold mb-4">Contact</h3>
             <address className="not-italic text-gray-300">
-              <p>1234 Street Name</p>
-              <p>City, State ZIP</p>
-              <p className="mt-3">Phone: (123) 456-7890</p>
-              <p>Email: info@dhaneja.com</p>
+              <p>Nawagarh Bametara</p>
+              <p>Chhattisgarh</p>
+              <p className="mt-3">Phone: 93298 47848</p>
+              <p>Email: jageshwarsahu910@gmail.com</p>
             </address>
           </div>
         </div>

@@ -1,22 +1,12 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import ProductCard from '@/components/ProductCard';
+import { IProduct } from '@/models/Product';
 
-interface Product {
-  _id: string;
-  name: string;
-  price: number;
-  imageUrl: string;
-  category: string;
-  description: string;
-  stock: number;
-  discount?: number;
-}
-
-export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+function ProductsList() {
+  const [products, setProducts] = useState<IProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeCategory, setActiveCategory] = useState('all');
@@ -46,8 +36,8 @@ export default function ProductsPage() {
       
       const data = await response.json();
       setProducts(data);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
@@ -110,5 +100,13 @@ export default function ProductsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<div>Loading products...</div>}>
+      <ProductsList />
+    </Suspense>
   );
 }

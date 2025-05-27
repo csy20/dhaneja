@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { IProduct } from '@/models/Product';
 
 interface CartItem {
   id: string;
@@ -12,7 +13,7 @@ interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
-  addToCart: (product: any, quantity: number) => void;
+  addToCart: (product: IProduct, quantity: number) => void;
   removeFromCart: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
@@ -48,19 +49,27 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     localStorage.setItem('cart', JSON.stringify(items));
   }, [items]);
   
-  const addToCart = (product: any, quantity: number) => {
+  const addToCart = (product: IProduct, quantity: number) => {
+    // Ensure product has an ID
+    if (!product._id) {
+      console.error('Product must have an _id to be added to cart');
+      return;
+    }
+
+    const productId = product._id; // Type-safe assignment
+
     setItems((prevItems) => {
-      const existingItem = prevItems.find(item => item.id === product._id);
+      const existingItem = prevItems.find(item => item.id === productId);
       
       if (existingItem) {
         return prevItems.map(item => 
-          item.id === product._id 
+          item.id === productId 
             ? { ...item, quantity: item.quantity + quantity }
             : item
         );
       } else {
         return [...prevItems, {
-          id: product._id,
+          id: productId,
           name: product.name,
           price: product.price,
           imageUrl: product.imageUrl,

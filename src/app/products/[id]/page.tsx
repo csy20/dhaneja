@@ -4,22 +4,12 @@ import React, { useEffect, useState } from 'react';
 import Image from 'next/image';
 import { useParams } from 'next/navigation';
 import { useCart } from '@/contexts/CartContext';
+import { IProduct } from '@/models/Product';
 import Link from 'next/link';
-
-interface Product {
-  _id: string;
-  name: string;
-  description: string;
-  price: number;
-  imageUrl: string;
-  category: string;
-  stock: number;
-  discount?: number;
-}
 
 export default function ProductDetailPage() {
   const { id } = useParams() as { id: string };
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<IProduct | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [quantity, setQuantity] = useState(1);
@@ -37,8 +27,8 @@ export default function ProductDetailPage() {
         
         const data = await response.json();
         setProduct(data);
-      } catch (err: any) {
-        setError(err.message);
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
         setLoading(false);
       }

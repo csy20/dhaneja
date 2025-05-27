@@ -1,14 +1,17 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 export interface IProduct {
+  _id?: string;
   name: string;
   description: string;
   price: number;
   category: string;
-  imageUrl: string;
+  imageUrl: string; // Maintain for backward compatibility
+  images: string[]; // Array of image URLs
   stock: number;
   discount?: number;
   createdAt: Date;
+  position?: number; // For drag and drop ordering
 }
 
 const productSchema = new Schema<IProduct>({
@@ -32,6 +35,14 @@ const productSchema = new Schema<IProduct>({
   imageUrl: { 
     type: String, 
     required: true 
+  },
+  images: { 
+    type: [String],
+    default: [] 
+  },
+  position: {
+    type: Number,
+    default: 0
   },
   stock: { 
     type: Number, 

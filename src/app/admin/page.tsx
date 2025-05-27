@@ -1,8 +1,11 @@
 "use client";
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { DragDropContext, Droppable, Draggable, DropResult } from 'react-beautiful-dnd';
+import { useDropzone } from 'react-dropzone';
 
 interface Product {
   _id: string;
@@ -11,8 +14,10 @@ interface Product {
   price: number;
   category: string;
   imageUrl: string;
+  images?: string[];
   stock: number;
   discount?: number;
+  position?: number;
 }
 
 interface Order {
@@ -47,9 +52,128 @@ export default function AdminDashboard() {
     price: 0,
     category: 'saree',
     imageUrl: '',
+    images: [] as string[],
     stock: 0,
-    discount: 0
+    discount: 0,
+    position: 0
   });
+  
+  const [uploadingImage, setUploadingImage] = useState(false);
+  
+  // Define resetForm before it's used in handleSubmit
+  const resetForm = useCallback(() => {
+    setIsEditing(false);
+    setCurrentProduct(null);
+    setFormData({
+      name: '',
+      description: '',
+      price: 0,
+      category: 'saree',
+      imageUrl: '',
+      images: [],
+      stock: 0,
+      discount: 0,
+      position: products.length // Set new products at the end of the list
+    });
+  }, [products.length]);
+  
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    try {
+      // If no imageUrl but has images, use the first image as the main imageUrl
+      const dataToSubmit = {...formData};
+      if (!dataToSubmit.imageUrl && dataToSubmit.images.length > 0) {
+        dataToSubmit.imageUrl = dataToSubmit.images[0];
+      }
+      
+      if (isEditing && currentProduct) {
+        // Update existing product
+        const response = await fetch(`/api/products/${currentProduct._id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(dataToSubmit)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update product');
+        }
+        
+        const updatedProduct = await response.json();
+        setProducts(products.map(p => 
+          p._id === currentProduct._id ? updatedProduct : p
+        ));
+      } else {
+        // Create new product
+        const response = await fetch('/api/products', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify(dataToSubmit)
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create product');
+        }
+        
+        const newProduct = await response.json();
+        setProducts([...products, newProduct]);
+      }
+      
+      // Reset form
+      resetForm();
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMessage);
+    }
+  }, [formData, isEditing, currentProduct, token, products, resetForm]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/products');
+      if (!response.ok) {
+        throw new Error('Failed to fetch products');
+      }
+      const data = await response.json();
+      // Sort products by position if available
+      const sortedProducts = data.sort((a: Product, b: Product) => 
+        (a.position || 0) - (b.position || 0)
+      );
+      setProducts(sortedProducts);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+  
+  const fetchOrders = useCallback(async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/orders', {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch orders');
+      }
+      const data = await response.json();
+      setOrders(data);
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
   
   useEffect(() => {
     // Redirect if not admin
@@ -72,43 +196,7 @@ export default function AdminDashboard() {
       fetchProducts();
       fetchOrders();
     }
-  }, [user, token, router]);
-  
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/products');
-      if (!response.ok) {
-        throw new Error('Failed to fetch products');
-      }
-      const data = await response.json();
-      setProducts(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const response = await fetch('/api/orders', {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch orders');
-      }
-      const data = await response.json();
-      setOrders(data);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [user, token, router, fetchOrders]);
   
   const handleDeleteProduct = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this product?')) {
@@ -126,8 +214,9 @@ export default function AdminDashboard() {
         
         // Update products list after deletion
         setProducts(products.filter(product => product._id !== id));
-      } catch (err: any) {
-        setError(err.message);
+      } catch (error: unknown) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+        setError(errorMessage);
       }
     }
   };
@@ -141,8 +230,10 @@ export default function AdminDashboard() {
       price: product.price,
       category: product.category,
       imageUrl: product.imageUrl,
+      images: product.images || [],
       stock: product.stock,
-      discount: product.discount || 0
+      discount: product.discount || 0,
+      position: product.position || 0
     });
   };
   
@@ -150,73 +241,118 @@ export default function AdminDashboard() {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'price' || name === 'stock' || name === 'discount' 
+      [name]: name === 'price' || name === 'stock' || name === 'discount' || name === 'position'
         ? parseFloat(value) 
         : value
     });
   };
   
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  // File upload handling with react-dropzone
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    // Upload each file
+    setUploadingImage(true);
     try {
-      if (isEditing && currentProduct) {
-        // Update existing product
-        const response = await fetch(`/api/products/${currentProduct._id}`, {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify(formData)
-        });
+      const uploadedImages: string[] = [];
+      
+      for (const file of acceptedFiles) {
+        const formData = new FormData();
+        formData.append('file', file);
         
-        if (!response.ok) {
-          throw new Error('Failed to update product');
-        }
-        
-        const updatedProduct = await response.json();
-        setProducts(products.map(p => 
-          p._id === currentProduct._id ? updatedProduct : p
-        ));
-      } else {
-        // Create new product
-        const response = await fetch('/api/products', {
+        const response = await fetch('/api/upload', {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify(formData)
+          body: formData
         });
         
         if (!response.ok) {
-          throw new Error('Failed to create product');
+          throw new Error('Failed to upload image');
         }
         
-        const newProduct = await response.json();
-        setProducts([...products, newProduct]);
+        const result = await response.json();
+        uploadedImages.push(result.filePath);
       }
       
-      // Reset form
-      resetForm();
-    } catch (err: any) {
-      setError(err.message);
+      // Update form with new images
+      setFormData(prev => ({
+        ...prev,
+        images: [...prev.images, ...uploadedImages],
+        // If no main image URL, use the first uploaded image
+        imageUrl: prev.imageUrl || uploadedImages[0] || ''
+      }));
+    } catch (error: unknown) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      setError(errorMessage);
+    } finally {
+      setUploadingImage(false);
     }
+  }, [token]);
+  
+  const { getRootProps, getInputProps } = useDropzone({
+    onDrop,
+    accept: {
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+    }
+  });
+  
+  const removeImage = (index: number) => {
+    setFormData(prev => {
+      const newImages = [...prev.images];
+      newImages.splice(index, 1);
+      
+      // If the main image was removed, update the main image URL
+      let newImageUrl = prev.imageUrl;
+      if (prev.imageUrl === prev.images[index]) {
+        newImageUrl = newImages.length > 0 ? newImages[0] : '';
+      }
+      
+      return {
+        ...prev,
+        images: newImages,
+        imageUrl: newImageUrl
+      };
+    });
   };
   
-  const resetForm = () => {
-    setIsEditing(false);
-    setCurrentProduct(null);
-    setFormData({
-      name: '',
-      description: '',
-      price: 0,
-      category: 'saree',
-      imageUrl: '',
-      stock: 0,
-      discount: 0
-    });
+  const setMainImage = (url: string) => {
+    setFormData(prev => ({
+      ...prev,
+      imageUrl: url
+    }));
+  };
+  
+  // Handle drag and drop reordering of products
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    
+    const items = Array.from(products);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    
+    // Update positions
+    const updatedItems = items.map((item, index) => ({
+      ...item,
+      position: index
+    }));
+    
+    setProducts(updatedItems);
+    
+    // Save new positions to the database
+    try {
+      // For simplicity, we'll update just the dragged item's position
+      const draggedItem = updatedItems[result.destination.index];
+      await fetch(`/api/products/${draggedItem._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ position: result.destination.index })
+      });
+    } catch {
+      setError("Failed to update product positions");
+    }
   };
   
   if (redirecting) {
@@ -227,7 +363,7 @@ export default function AdminDashboard() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
           <h2 className="text-xl font-bold mb-2">Access Denied</h2>
-          <p className="mb-4">You don't have permission to access the admin dashboard.</p>
+          <p className="mb-4">You don{"'"}t have permission to access the admin dashboard.</p>
           <p className="mb-4">You will be redirected to the {!user ? 'login page' : 'home page'} momentarily.</p>
           <div className="animate-pulse mt-4">
             <div className="h-1 w-full bg-red-300 rounded"></div>
@@ -305,7 +441,7 @@ export default function AdminDashboard() {
                     required
                   >
                     <option value="saree">Saree</option>
-                    <option value="mens">Men's Clothing</option>
+                    <option value="mens">Men{"'"}s Clothing</option>
                     <option value="kids">Kids Wear</option>
                     <option value="accessories">Accessories</option>
                     <option value="other">Other</option>
@@ -352,15 +488,77 @@ export default function AdminDashboard() {
                   />
                 </div>
                 
+                <div className="md:col-span-2">
+                  <label className="block text-gray-700 mb-2">Product Images</label>
+                  <div 
+                    {...getRootProps()} 
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50"
+                  >
+                    <input {...getInputProps()} />
+                    {uploadingImage ? (
+                      <div className="text-center py-4">
+                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
+                        <p className="mt-2 text-sm text-gray-500">Uploading...</p>
+                      </div>
+                    ) : (
+                      <div>
+                        <p className="text-sm text-gray-500">Drag {"'"}n{"'"} drop some images here, or click to select files</p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          Supported formats: JPEG, PNG, WebP
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Preview of uploaded images */}
+                {formData.images.length > 0 && (
+                  <div className="md:col-span-2 mt-2">
+                    <label className="block text-gray-700 mb-2">Product Images</label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                      {formData.images.map((img, index) => (
+                        <div key={index} className="relative group border rounded p-1">                            <div className="aspect-square overflow-hidden relative">
+                            <Image 
+                              src={img} 
+                              alt={`Product image ${index + 1}`}
+                              className="object-cover"
+                              fill
+                              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                            />
+                            
+                            {/* Overlay with actions */}
+                            <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-1">
+                              <button 
+                                type="button"
+                                onClick={() => setMainImage(img)}
+                                className={`text-xs px-2 py-1 rounded ${formData.imageUrl === img ? 'bg-green-500' : 'bg-blue-500'} text-white`}
+                              >
+                                {formData.imageUrl === img ? 'Main Image' : 'Set as Main'}
+                              </button>
+                              <button 
+                                type="button"
+                                onClick={() => removeImage(index)}
+                                className="text-xs px-2 py-1 bg-red-500 text-white rounded"
+                              >
+                                Remove
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
                 <div>
-                  <label className="block text-gray-700 mb-2">Image URL</label>
+                  <label className="block text-gray-700 mb-2">Main Image URL (Optional)</label>
                   <input
                     type="url"
                     name="imageUrl"
                     value={formData.imageUrl}
                     onChange={handleInputChange}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    required
+                    placeholder="Will use first uploaded image if left empty"
                   />
                 </div>
                 
@@ -400,60 +598,106 @@ export default function AdminDashboard() {
           
           <h2 className="text-xl font-semibold mb-4">Products List</h2>
           
+          <h2 className="text-xl font-semibold mb-4">Products List (Drag to Reorder)</h2>
+          
           {loading ? (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full bg-white shadow-md rounded-lg">
-                <thead>
-                  <tr className="bg-gray-100 text-gray-700">
-                    <th className="py-3 px-4 text-left">Name</th>
-                    <th className="py-3 px-4 text-left">Category</th>
-                    <th className="py-3 px-4 text-left">Price</th>
-                    <th className="py-3 px-4 text-left">Stock</th>
-                    <th className="py-3 px-4 text-left">Discount</th>
-                    <th className="py-3 px-4 text-left">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {products.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="text-center py-4">
-                        No products found. Add your first product above.
-                      </td>
-                    </tr>
-                  ) : (
-                    products.map((product) => (
-                      <tr key={product._id} className="border-t hover:bg-gray-50">
-                        <td className="py-3 px-4">{product.name}</td>
-                        <td className="py-3 px-4 capitalize">{product.category}</td>
-                        <td className="py-3 px-4">₹{product.price.toFixed(2)}</td>
-                        <td className="py-3 px-4">{product.stock}</td>
-                        <td className="py-3 px-4">{product.discount ? `${product.discount}%` : '—'}</td>
-                        <td className="py-3 px-4">
-                          <div className="flex space-x-2">
-                            <button
-                              onClick={() => handleEditProduct(product)}
-                              className="text-blue-600 hover:text-blue-800"
+            <DragDropContext onDragEnd={handleDragEnd}>
+              <Droppable droppableId="products">
+                {(provided) => (
+                  <div 
+                    className="overflow-x-auto"
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                  >
+                    <table className="min-w-full bg-white shadow-md rounded-lg">
+                      <thead>
+                        <tr className="bg-gray-100 text-gray-700">
+                          <th className="w-10"></th>
+                          <th className="py-3 px-4 text-left">Image</th>
+                          <th className="py-3 px-4 text-left">Name</th>
+                          <th className="py-3 px-4 text-left">Category</th>
+                          <th className="py-3 px-4 text-left">Price</th>
+                          <th className="py-3 px-4 text-left">Stock</th>
+                          <th className="py-3 px-4 text-left">Discount</th>
+                          <th className="py-3 px-4 text-left">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {products.length === 0 ? (
+                          <tr>
+                            <td colSpan={8} className="text-center py-4">
+                              No products found. Add your first product above.
+                            </td>
+                          </tr>
+                        ) : (
+                          products.map((product, index) => (
+                            <Draggable 
+                              key={product._id} 
+                              draggableId={product._id} 
+                              index={index}
                             >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => handleDeleteProduct(product._id)}
-                              className="text-red-600 hover:text-red-800"
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
-            </div>
+                              {(provided) => (
+                                <tr 
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  className="border-t hover:bg-gray-50"
+                                >
+                                  <td 
+                                    {...provided.dragHandleProps}
+                                    className="py-3 px-2 cursor-grab"
+                                  >
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+                                    </svg>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <div className="w-12 h-12 relative rounded overflow-hidden">
+                                      <Image 
+                                        src={product.imageUrl} 
+                                        alt={product.name}
+                                        className="object-cover"
+                                        fill
+                                        sizes="48px"
+                                      />
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-4">{product.name}</td>
+                                  <td className="py-3 px-4 capitalize">{product.category}</td>
+                                  <td className="py-3 px-4">₹{product.price.toFixed(2)}</td>
+                                  <td className="py-3 px-4">{product.stock}</td>
+                                  <td className="py-3 px-4">{product.discount ? `${product.discount}%` : '—'}</td>
+                                  <td className="py-3 px-4">
+                                    <div className="flex space-x-2">
+                                      <button
+                                        onClick={() => handleEditProduct(product)}
+                                        className="text-blue-600 hover:text-blue-800"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={() => handleDeleteProduct(product._id)}
+                                        className="text-red-600 hover:text-red-800"
+                                      >
+                                        Delete
+                                      </button>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </Draggable>
+                          ))
+                        )}
+                        {provided.placeholder}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </Droppable>
+            </DragDropContext>
           )}
         </div>
       )}

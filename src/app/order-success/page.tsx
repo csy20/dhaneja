@@ -29,7 +29,7 @@ export default function OrderSuccessPage() {
         <h1 className="text-3xl font-bold mb-4 text-green-600">Order Placed Successfully!</h1>
         
         <p className="text-gray-600 mb-8">
-          Thank you for your order. We've received your order and will begin processing it right away.
+          Thank you for your order. We&apos;ve received your order and will begin processing it right away.
           You will receive an email confirmation shortly.
         </p>
         

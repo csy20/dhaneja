@@ -4,15 +4,10 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useCart } from '@/contexts/CartContext';
+import { IProduct } from '@/models/Product';
 
 interface ProductCardProps {
-  product: {
-    _id: string;
-    name: string;
-    price: number;
-    imageUrl: string;
-    discount?: number;
-  };
+  product: IProduct;
 }
 
 const ProductCard = ({ product }: ProductCardProps) => {

@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useState, useEffect, Suspense } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
 
-function LoginForm() {
+export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'customer' | 'admin'>('customer');
@@ -77,7 +77,7 @@ function LoginForm() {
       }
       
       setLoginAttempts(0); // Reset attempts on success
-    } catch (_err: unknown) {
+    } catch (err: any) {
       // Increment failed login attempts
       setLoginAttempts(prev => prev + 1);
     }
@@ -246,7 +246,7 @@ function LoginForm() {
           
           <div className="text-center">
             <p className="mt-2 text-center text-sm text-gray-600">
-              Don&apos;t have an account?{' '}
+              Don't have an account?{' '}
               <Link href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
                 Sign up
               </Link>
@@ -261,13 +261,5 @@ function LoginForm() {
         </form>
       </div>
     </div>
-  );
-}
-
-export default function LoginPage() {
-  return (
-    <Suspense fallback={<div>Loading...</div>}>
-      <LoginForm />
-    </Suspense>
   );
 }

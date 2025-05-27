@@ -1,4 +1,4 @@
-import mongoose, { Schema, model, models } from 'mongoose';
+import { Schema, model, models } from 'mongoose';
 
 export interface IUser {
   _id?: string;  // MongoDB ID field, optional in the interface as it's generated

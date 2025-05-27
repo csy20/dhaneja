@@ -10,7 +10,7 @@ interface DecodedToken {
 export function verifyToken(token: string): DecodedToken | null {
   try {
     return jwt.verify(token, process.env.JWT_SECRET || 'fallback-secret') as DecodedToken;
-  } catch (error) {
+  } catch (_error) {
     return null;
   }
 }

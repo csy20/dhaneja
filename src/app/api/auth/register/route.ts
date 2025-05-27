@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
   
   try {
     await dbConnect();
-  } catch (error) {
+  } catch (_error) {
     console.log('Using mock database instead of MongoDB');
     useMockDb = true;
   }
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
       existingUser = useMockDb ? 
         await userDb.findOne({ email }) : 
         await User.findOne({ email });
-    } catch (error) {
+    } catch (_error) {
       console.log('Falling back to mock database for user check');
       existingUser = await userDb.findOne({ email });
       useMockDb = true;
