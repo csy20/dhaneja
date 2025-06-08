@@ -49,10 +49,7 @@ async function createOrUpdateAdmin() {
       process.exit(1);
     }
     
-    await mongoose.connect(uri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true
-    });
+    await mongoose.connect(uri);
     console.log('Connected to MongoDB');
 
     // Create User model

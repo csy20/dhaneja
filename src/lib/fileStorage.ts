@@ -56,9 +56,12 @@ export const saveToCloudStorage = async (buffer: Buffer, fileName: string) => {
     // Future implementation: Upload to S3 or Cloudinary
     // For now, we'll still use local file system (with warning)
     console.warn('Production file storage not configured. Using local storage, which may not persist.');
-    return await saveFile(buffer, fileName);
+    const filePath = await saveFile(buffer, fileName);
+    return filePath;
   }
   
   // In development, use local filesystem
-  return await saveFile(buffer, fileName);
+  const filePath = await saveFile(buffer, fileName);
+  console.log(`File saved to: ${filePath}`);
+  return filePath;
 };

@@ -8,6 +8,14 @@
     "createdAt": "2025-05-25T15:56:25.116Z"
   },
   {
+    "_id": "admin_test_123",
+    "name": "Test Admin",
+    "email": "admin@test.com",
+    "password": "$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi",
+    "isAdmin": true,
+    "createdAt": "2024-12-08T10:00:00.000Z"
+  },
+  {
     "_id": "60d0fe4f5311236168a109cb",
     "name": "Test User",
     "email": "test@example.com",

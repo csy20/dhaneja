@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Product from '@/models/Product';
+import { productDb } from '@/lib/mockDb';
 import { verifyToken } from '@/lib/auth';
 
 // GET a specific product
@@ -8,11 +9,29 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await dbConnect();
+  let useMockDb = false;
+  
+  try {
+    await dbConnect();
+  } catch (_error) {
+    console.log('Using mock database instead of MongoDB for products');
+    useMockDb = true;
+  }
+  
   const { id } = await params;
   
   try {
-    const product = await Product.findById(id);
+    let product;
+    if (useMockDb) {
+      product = await productDb.findById(id);
+    } else {
+      try {
+        product = await Product.findById(id);
+      } catch (_error) {
+        console.log('MongoDB query failed, falling back to mock database');
+        product = await productDb.findById(id);
+      }
+    }
     
     if (!product) {
       return NextResponse.json(
@@ -36,7 +55,15 @@ export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await dbConnect();
+  let useMockDb = false;
+  
+  try {
+    await dbConnect();
+  } catch (_error) {
+    console.log('Using mock database instead of MongoDB for products');
+    useMockDb = true;
+  }
+  
   const { id } = await params;
   
   try {
@@ -60,11 +87,23 @@ export async function PUT(
     }
     
     const productData = await request.json();
-    const product = await Product.findByIdAndUpdate(
-      id,
-      productData,
-      { new: true, runValidators: true }
-    );
+    console.log('Updating product with data:', productData);
+    
+    let product;
+    if (useMockDb) {
+      product = await productDb.findByIdAndUpdate(id, productData);
+    } else {
+      try {
+        product = await Product.findByIdAndUpdate(
+          id,
+          productData,
+          { new: true, runValidators: true }
+        );
+      } catch (_error) {
+        console.log('MongoDB update failed, falling back to mock database');
+        product = await productDb.findByIdAndUpdate(id, productData);
+      }
+    }
     
     if (!product) {
       return NextResponse.json(
@@ -88,7 +127,15 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await dbConnect();
+  let useMockDb = false;
+  
+  try {
+    await dbConnect();
+  } catch (_error) {
+    console.log('Using mock database instead of MongoDB for products');
+    useMockDb = true;
+  }
+  
   const { id } = await params;
   
   try {
@@ -111,7 +158,17 @@ export async function DELETE(
       );
     }
     
-    const product = await Product.findByIdAndDelete(id);
+    let product;
+    if (useMockDb) {
+      product = await productDb.findByIdAndDelete(id);
+    } else {
+      try {
+        product = await Product.findByIdAndDelete(id);
+      } catch (_error) {
+        console.log('MongoDB delete failed, falling back to mock database');
+        product = await productDb.findByIdAndDelete(id);
+      }
+    }
     
     if (!product) {
       return NextResponse.json(

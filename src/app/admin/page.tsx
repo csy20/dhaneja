@@ -78,6 +78,25 @@ export default function AdminDashboard() {
   
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null); // Clear any previous errors
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      setError('Product name is required');
+      return;
+    }
+    if (!formData.description.trim()) {
+      setError('Product description is required');
+      return;
+    }
+    if (formData.price <= 0) {
+      setError('Product price must be greater than 0');
+      return;
+    }
+    if (formData.stock < 0) {
+      setError('Stock cannot be negative');
+      return;
+    }
     
     try {
       // If no imageUrl but has images, use the first image as the main imageUrl
@@ -86,8 +105,13 @@ export default function AdminDashboard() {
         dataToSubmit.imageUrl = dataToSubmit.images[0];
       }
       
+      console.log('Submitting product data:', dataToSubmit);
+      console.log('Is editing:', isEditing);
+      console.log('Token available:', !!token);
+      
       if (isEditing && currentProduct) {
         // Update existing product
+        console.log('Updating product:', currentProduct._id);
         const response = await fetch(`/api/products/${currentProduct._id}`, {
           method: 'PUT',
           headers: {
@@ -98,15 +122,19 @@ export default function AdminDashboard() {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to update product');
+          const errorData = await response.json();
+          console.error('Update failed:', errorData);
+          throw new Error(errorData.error || 'Failed to update product');
         }
         
         const updatedProduct = await response.json();
+        console.log('Product updated successfully:', updatedProduct);
         setProducts(products.map(p => 
           p._id === currentProduct._id ? updatedProduct : p
         ));
       } else {
         // Create new product
+        console.log('Creating new product...');
         const response = await fetch('/api/products', {
           method: 'POST',
           headers: {
@@ -116,18 +144,25 @@ export default function AdminDashboard() {
           body: JSON.stringify(dataToSubmit)
         });
         
+        console.log('Response status:', response.status);
+        
         if (!response.ok) {
-          throw new Error('Failed to create product');
+          const errorData = await response.json();
+          console.error('Create failed:', errorData);
+          throw new Error(errorData.error || 'Failed to create product');
         }
         
         const newProduct = await response.json();
+        console.log('Product created successfully:', newProduct);
         setProducts([...products, newProduct]);
       }
       
       // Reset form
       resetForm();
+      console.log('Form reset successfully');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.error('Form submission error:', errorMessage);
       setError(errorMessage);
     }
   }, [formData, isEditing, currentProduct, token, products, resetForm]);
@@ -245,15 +280,23 @@ export default function AdminDashboard() {
         : value
     });
   };
-  
-  // File upload handling with react-dropzone
+   // File upload handling with react-dropzone
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) {
+      setError('No valid image files selected. Please select JPEG, PNG, or WebP files.');
+      return;
+    }
+
     // Upload each file
     setUploadingImage(true);
+    setError(null); // Clear any previous errors
+    
     try {
       const uploadedImages: string[] = [];
       
       for (const file of acceptedFiles) {
+        console.log(`Uploading file: ${file.name}, size: ${file.size}, type: ${file.type}`);
+        
         const formData = new FormData();
         formData.append('file', file);
         
@@ -266,10 +309,12 @@ export default function AdminDashboard() {
         });
         
         if (!response.ok) {
-          throw new Error('Failed to upload image');
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Failed to upload image');
         }
         
         const result = await response.json();
+        console.log(`Upload successful: ${result.filePath}`);
         uploadedImages.push(result.filePath);
       }
       
@@ -280,18 +325,29 @@ export default function AdminDashboard() {
         // If no main image URL, use the first uploaded image
         imageUrl: prev.imageUrl || uploadedImages[0] || ''
       }));
+
+      console.log(`Successfully uploaded ${uploadedImages.length} images`);
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      setError(errorMessage);
+      console.error('Upload error:', errorMessage);
+      setError(`Upload failed: ${errorMessage}`);
     } finally {
       setUploadingImage(false);
     }
   }, [token]);
-  
-  const { getRootProps, getInputProps } = useDropzone({
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: {
-      'image/*': ['.jpeg', '.jpg', '.png', '.webp']
+      'image/*': ['.jpeg', '.jpg', '.png', '.webp', '.gif']
+    },
+    multiple: true, // Explicitly enable multiple file selection
+    maxSize: 10 * 1024 * 1024, // 10MB max file size
+    onDropRejected: (fileRejections) => {
+      const rejectedReasons = fileRejections.map(rejection => 
+        `${rejection.file.name}: ${rejection.errors.map(e => e.message).join(', ')}`
+      );
+      setError(`File(s) rejected: ${rejectedReasons.join('; ')}`);
     }
   });
   
@@ -518,57 +574,128 @@ export default function AdminDashboard() {
                 </div>
                 
                 <div className="md:col-span-2">
-                  <label className="block text-gray-700 mb-2">Product Images</label>
+                  <label className="block text-gray-700 mb-2 font-medium">Product Images (Multiple Selection)</label>
                   <div 
                     {...getRootProps()} 
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center cursor-pointer hover:bg-gray-50"
+                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                      isDragActive 
+                        ? 'border-indigo-500 bg-indigo-50' 
+                        : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+                    } ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}
                   >
                     <input {...getInputProps()} />
                     {uploadingImage ? (
                       <div className="text-center py-4">
                         <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-500">Uploading...</p>
+                        <p className="mt-2 text-sm text-gray-500">Uploading images...</p>
                       </div>
                     ) : (
                       <div>
-                        <p className="text-sm text-gray-500">Drag &apos;n&apos; drop some images here, or click to select files</p>
-                        <p className="text-xs text-gray-400 mt-1">
-                          Supported formats: JPEG, PNG, WebP
-                        </p>
+                        <div className="mx-auto w-12 h-12 text-gray-400 mb-4">
+                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                          </svg>
+                        </div>
+                        {isDragActive ? (
+                          <p className="text-lg text-indigo-600 font-medium">Drop the images here...</p>
+                        ) : (
+                          <>
+                            <p className="text-lg text-gray-700 font-medium mb-2">
+                              Click to select multiple images or drag & drop
+                            </p>
+                            <p className="text-sm text-gray-500 mb-2">
+                              You can select multiple images at once (Ctrl/Cmd + Click)
+                            </p>
+                            <p className="text-xs text-gray-400">
+                              Supported formats: JPEG, PNG, WebP, GIF • Max size: 10MB per file
+                            </p>
+                          </>
+                        )}
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Traditional file input as fallback */}
+                  <div className="mt-4">
+                    <label className="block text-sm text-gray-600 mb-2">
+                      Or use traditional file selector:
+                    </label>
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      onChange={async (e) => {
+                        const files = Array.from(e.target.files || []);
+                        if (files.length > 0) {
+                          await onDrop(files);
+                        }
+                      }}
+                      className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    />
                   </div>
                 </div>
                 
                 {/* Preview of uploaded images */}
                 {formData.images.length > 0 && (
-                  <div className="md:col-span-2 mt-2">
-                    <label className="block text-gray-700 mb-2">Product Images</label>
+                  <div className="md:col-span-2 mt-4">
+                    <label className="block text-gray-700 mb-3 font-medium">
+                      Uploaded Images ({formData.images.length})
+                      <span className="text-sm text-gray-500 font-normal ml-2">
+                        Click on an image to set it as the main product image
+                      </span>
+                    </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                       {formData.images.map((img, index) => (
-                        <div key={index} className="relative group border rounded p-1">
-                          <div className="aspect-square overflow-hidden relative">
+                        <div key={index} className="relative group border-2 rounded-lg p-1 hover:border-indigo-300 transition-colors">
+                          <div className="aspect-square overflow-hidden relative rounded">
                             <Image 
                               src={img} 
                               alt={`Product image ${index + 1}`}
-                              className="object-cover"
+                              className="object-cover cursor-pointer"
                               fill
                               sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, 20vw"
+                              onClick={() => setMainImage(img)}
                             />
                             
+                            {/* Main image indicator */}
+                            {formData.imageUrl === img && (
+                              <div className="absolute top-1 left-1">
+                                <span className="bg-green-500 text-white text-xs px-2 py-1 rounded-full font-medium">
+                                  Main
+                                </span>
+                              </div>
+                            )}
+                            
+                            {/* Image number */}
+                            <div className="absolute top-1 right-1">
+                              <span className="bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                                {index + 1}
+                              </span>
+                            </div>
+                            
                             {/* Overlay with actions */}
-                            <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-1">
+                            <div className="absolute inset-0 bg-black bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center space-y-2">
                               <button 
                                 type="button"
-                                onClick={() => setMainImage(img)}
-                                className={`text-xs px-2 py-1 rounded ${formData.imageUrl === img ? 'bg-green-500' : 'bg-blue-500'} text-white`}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setMainImage(img);
+                                }}
+                                className={`text-xs px-3 py-1 rounded-full font-medium transition-colors ${
+                                  formData.imageUrl === img 
+                                    ? 'bg-green-500 text-white' 
+                                    : 'bg-blue-500 hover:bg-blue-600 text-white'
+                                }`}
                               >
-                                {formData.imageUrl === img ? 'Main Image' : 'Set as Main'}
+                                {formData.imageUrl === img ? '✓ Main Image' : 'Set as Main'}
                               </button>
                               <button 
                                 type="button"
-                                onClick={() => removeImage(index)}
-                                className="text-xs px-2 py-1 bg-red-500 text-white rounded"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  removeImage(index);
+                                }}
+                                className="text-xs px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-full font-medium transition-colors"
                               >
                                 Remove
                               </button>
@@ -576,6 +703,20 @@ export default function AdminDashboard() {
                           </div>
                         </div>
                       ))}
+                    </div>
+                    
+                    {/* Bulk actions */}
+                    <div className="mt-4 flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setFormData(prev => ({ ...prev, images: [], imageUrl: '' }))}
+                        className="text-sm px-3 py-1 bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
+                      >
+                        Clear All Images
+                      </button>
+                      <span className="text-sm text-gray-500 py-1">
+                        Total: {formData.images.length} image{formData.images.length !== 1 ? 's' : ''}
+                      </span>
                     </div>
                   </div>
                 )}
@@ -650,8 +791,18 @@ export default function AdminDashboard() {
                 <tbody>
                   {products.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="text-center py-4">
-                        No products found. Add your first product above.
+                      <td colSpan={8} className="text-center py-8">
+                        <div className="flex flex-col items-center space-y-3">
+                          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center">
+                            <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-medium text-gray-900 mb-1">No products yet</h3>
+                            <p className="text-gray-500">Add your first product using the form above. You can upload multiple images for each product!</p>
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ) : (
@@ -684,14 +835,21 @@ export default function AdminDashboard() {
                           </div>
                         </td>
                         <td className="py-3 px-3">
-                          <div className="w-12 h-12 relative rounded overflow-hidden">
-                            <Image
-                              src={product.imageUrl || '/placeholder.jpg'}
-                              alt={product.name}
-                              fill
-                              className="object-cover"
-                              sizes="48px"
-                            />
+                          <div className="flex items-center space-x-2">
+                            <div className="w-12 h-12 relative rounded overflow-hidden border">
+                              <Image
+                                src={product.imageUrl || '/placeholder.jpg'}
+                                alt={product.name}
+                                fill
+                                className="object-cover"
+                                sizes="48px"
+                              />
+                            </div>
+                            {product.images && product.images.length > 1 && (
+                              <div className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                +{product.images.length - 1} more
+                              </div>
+                            )}
                           </div>
                         </td>
                         <td className="py-3 px-4">{product.name}</td>

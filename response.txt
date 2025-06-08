@@ -1,0 +1,1 @@
+{"token":"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJhZG1pbl90ZXN0XzEyMyIsImlzQWRtaW4iOnRydWUsImlhdCI6MTc0OTM4MzYzNSwiZXhwIjoxNzQ5OTg4NDM1fQ.fqQOeESEF9LJtekPbevXqyRVKQDCk4ZNKAT2f6TlvoQ","user":{"id":"admin_test_123","name":"Test Admin","email":"admin@test.com","isAdmin":true}}
