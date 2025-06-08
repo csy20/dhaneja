@@ -145,7 +145,7 @@ export default function AdminTest() {
         <h3 className="font-bold">Instructions:</h3>
         <p>1. Login with admin@test.com / password</p>
         <p>2. Come to this page (/admin-test)</p>
-        <p>3. Click "Test Create Product" and check browser console</p>
+        <p>3. Click &quot;Test Create Product&quot; and check browser console</p>
       </div>
     </div>
   );

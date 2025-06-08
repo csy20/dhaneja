@@ -133,7 +133,7 @@ export default function SimpleAdminDashboard() {
       console.log('✅ Product created:', newProduct);
       
       setProducts([...products, newProduct]);
-      setSuccess(`Product "${newProduct.name}" created successfully!`);
+      setSuccess(`Product &quot;${newProduct.name}&quot; created successfully!`);
       
       // Reset form
       setFormData({
@@ -172,7 +172,7 @@ export default function SimpleAdminDashboard() {
         <h3 className="font-bold">Auth Status:</h3>
         <p>✅ User: {user.name} ({user.email})</p>
         <p>✅ Admin: {user.isAdmin.toString()}</p>
-        <p>✅ Token: Present ({token.length} chars)</p>
+        <p>✅ Token: {token ? `Present (${token.length} chars)` : 'Not available'}</p>
       </div>
       
       {error && (
@@ -213,7 +213,7 @@ export default function SimpleAdminDashboard() {
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               >
                 <option value="saree">Saree</option>
-                <option value="mens">Men's Clothing</option>
+                <option value="mens">Men&apos;s Clothing</option>
                 <option value="kids">Kids Wear</option>
                 <option value="accessories">Accessories</option>
                 <option value="other">Other</option>
@@ -309,7 +309,7 @@ export default function SimpleAdminDashboard() {
         <h3 className="font-bold">Debug Info:</h3>
         <p>This is a simplified admin dashboard without dropzone complexity.</p>
         <p>If this works, the issue is in the dropzone functionality.</p>
-        <p>If this doesn't work, the issue is more fundamental.</p>
+        <p>If this doesn&apos;t work, the issue is more fundamental.</p>
       </div>
     </div>
   );

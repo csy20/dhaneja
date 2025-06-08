@@ -192,7 +192,7 @@ export default function AdminDashboard() {
       console.error('Error object:', error);
       setError(errorMessage);
     }
-  }, [formData, isEditing, currentProduct, token, products, resetForm]);
+  }, [formData, isEditing, currentProduct, token, products, resetForm, user]);
 
   const fetchProducts = async () => {
     try {

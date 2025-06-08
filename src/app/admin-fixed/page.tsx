@@ -190,8 +190,7 @@ export default function AdminFixed() {
       const newProduct = await response.json();
       console.log('✅ Product created:', newProduct);
       
-      setProducts([...products, newProduct]);
-      setSuccess(`Product "${newProduct.name}" created successfully!`);
+      setProducts([...products, newProduct]);                  setSuccess(`Product "${newProduct.name}" created successfully!`);
       
       // Reset form
       setFormData({
@@ -276,7 +275,7 @@ export default function AdminFixed() {
                 disabled={isSubmitting}
               >
                 <option value="saree">Saree</option>
-                <option value="mens">Men's Clothing</option>
+                <option value="mens">Men&apos;s Clothing</option>
                 <option value="kids">Kids Wear</option>
                 <option value="accessories">Accessories</option>
                 <option value="other">Other</option>
