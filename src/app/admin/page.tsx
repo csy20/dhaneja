@@ -80,34 +80,49 @@ export default function AdminDashboard() {
     e.preventDefault();
     setError(null); // Clear any previous errors
     
+    console.log('=== ADMIN DASHBOARD FORM SUBMISSION DEBUG ===');
+    console.log('1. Form submission started');
+    console.log('2. Current user:', user);
+    console.log('3. Current token:', token ? 'Present' : 'Missing');
+    console.log('4. Form data:', formData);
+    console.log('5. Is editing mode:', isEditing);
+    
     // Validate required fields
+    console.log('6. Starting validation...');
     if (!formData.name.trim()) {
+      console.log('❌ Validation failed: Product name is required');
       setError('Product name is required');
       return;
     }
     if (!formData.description.trim()) {
+      console.log('❌ Validation failed: Product description is required');
       setError('Product description is required');
       return;
     }
     if (formData.price <= 0) {
+      console.log('❌ Validation failed: Product price must be greater than 0');
       setError('Product price must be greater than 0');
       return;
     }
     if (formData.stock < 0) {
+      console.log('❌ Validation failed: Stock cannot be negative');
       setError('Stock cannot be negative');
       return;
     }
+    console.log('✅ All validations passed');
     
     try {
+      console.log('7. Preparing data for submission...');
       // If no imageUrl but has images, use the first image as the main imageUrl
       const dataToSubmit = {...formData};
       if (!dataToSubmit.imageUrl && dataToSubmit.images.length > 0) {
         dataToSubmit.imageUrl = dataToSubmit.images[0];
       }
       
-      console.log('Submitting product data:', dataToSubmit);
-      console.log('Is editing:', isEditing);
-      console.log('Token available:', !!token);
+      console.log('8. Data to submit:', dataToSubmit);
+      console.log('9. Is editing:', isEditing);
+      console.log('10. Token available:', !!token);
+      console.log('11. User is admin:', user?.isAdmin);
       
       if (isEditing && currentProduct) {
         // Update existing product
@@ -134,7 +149,8 @@ export default function AdminDashboard() {
         ));
       } else {
         // Create new product
-        console.log('Creating new product...');
+        console.log('12. Creating new product...');
+        console.log('13. Making fetch request to /api/products');
         const response = await fetch('/api/products', {
           method: 'POST',
           headers: {
@@ -144,25 +160,36 @@ export default function AdminDashboard() {
           body: JSON.stringify(dataToSubmit)
         });
         
-        console.log('Response status:', response.status);
+        console.log('14. Response received');
+        console.log('15. Response status:', response.status);
+        console.log('16. Response ok:', response.ok);
+        console.log('17. Response headers:', Object.fromEntries(response.headers.entries()));
         
         if (!response.ok) {
           const errorData = await response.json();
+          console.log('❌ API Error Response:', errorData);
           console.error('Create failed:', errorData);
           throw new Error(errorData.error || 'Failed to create product');
         }
         
         const newProduct = await response.json();
-        console.log('Product created successfully:', newProduct);
+        console.log('✅ Product created successfully!');
+        console.log('18. New product data:', newProduct);
+        console.log('19. Current products before update:', products.length);
         setProducts([...products, newProduct]);
+        console.log('20. Products state should be updated now');
       }
       
       // Reset form
+      console.log('21. Resetting form...');
       resetForm();
-      console.log('Form reset successfully');
+      console.log('22. Form reset completed');
+      console.log('=== FORM SUBMISSION COMPLETED SUCCESSFULLY ===');
     } catch (error: unknown) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
+      console.log('❌ FORM SUBMISSION ERROR:');
       console.error('Form submission error:', errorMessage);
+      console.error('Error object:', error);
       setError(errorMessage);
     }
   }, [formData, isEditing, currentProduct, token, products, resetForm]);
@@ -343,6 +370,9 @@ export default function AdminDashboard() {
     },
     multiple: true, // Explicitly enable multiple file selection
     maxSize: 10 * 1024 * 1024, // 10MB max file size
+    noClick: false, // Allow clicking
+    noKeyboard: true, // Disable keyboard events to prevent conflicts
+    preventDropOnDocument: true, // Prevent drops on document
     onDropRejected: (fileRejections) => {
       const rejectedReasons = fileRejections.map(rejection => 
         `${rejection.file.name}: ${rejection.errors.map(e => e.message).join(', ')}`
@@ -502,6 +532,19 @@ export default function AdminDashboard() {
               {isEditing ? 'Edit Product' : 'Add New Product'}
             </h2>
             
+            {/* Debug Information */}
+            <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+              <h3 className="font-semibold text-blue-800 mb-2">🔧 Debug Info:</h3>
+              <div className="text-sm text-blue-700 space-y-1">
+                <p>✅ User: {user?.name} ({user?.email})</p>
+                <p>✅ Admin Status: {user?.isAdmin ? 'Yes' : 'No'}</p>
+                <p>✅ Token: {token ? 'Present' : 'Missing'}</p>
+                <p>✅ Products Count: {products.length}</p>
+                <p>✅ Uploading: {uploadingImage ? 'Yes' : 'No'}</p>
+                <p>✅ Form Valid: {formData.name && formData.description && formData.price > 0 ? 'Yes' : 'No'}</p>
+              </div>
+            </div>
+            
             <form onSubmit={handleSubmit}>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
@@ -575,44 +618,48 @@ export default function AdminDashboard() {
                 
                 <div className="md:col-span-2">
                   <label className="block text-gray-700 mb-2 font-medium">Product Images (Multiple Selection)</label>
-                  <div 
-                    {...getRootProps()} 
-                    className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                      isDragActive 
-                        ? 'border-indigo-500 bg-indigo-50' 
-                        : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
-                    } ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}
-                  >
-                    <input {...getInputProps()} />
-                    {uploadingImage ? (
-                      <div className="text-center py-4">
-                        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
-                        <p className="mt-2 text-sm text-gray-500">Uploading images...</p>
-                      </div>
-                    ) : (
-                      <div>
-                        <div className="mx-auto w-12 h-12 text-gray-400 mb-4">
-                          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-                          </svg>
+                  
+                  {/* Dropzone container - isolated from form */}
+                  <div className="mb-4">
+                    <div 
+                      {...getRootProps()} 
+                      className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                        isDragActive 
+                          ? 'border-indigo-500 bg-indigo-50' 
+                          : 'border-gray-300 hover:border-indigo-400 hover:bg-gray-50'
+                      } ${uploadingImage ? 'pointer-events-none opacity-50' : ''}`}
+                    >
+                      <input {...getInputProps()} />
+                      {uploadingImage ? (
+                        <div className="text-center py-4">
+                          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-indigo-600 mx-auto"></div>
+                          <p className="mt-2 text-sm text-gray-500">Uploading images...</p>
                         </div>
-                        {isDragActive ? (
-                          <p className="text-lg text-indigo-600 font-medium">Drop the images here...</p>
-                        ) : (
-                          <>
-                            <p className="text-lg text-gray-700 font-medium mb-2">
-                              Click to select multiple images or drag & drop
-                            </p>
-                            <p className="text-sm text-gray-500 mb-2">
-                              You can select multiple images at once (Ctrl/Cmd + Click)
-                            </p>
-                            <p className="text-xs text-gray-400">
-                              Supported formats: JPEG, PNG, WebP, GIF • Max size: 10MB per file
-                            </p>
-                          </>
-                        )}
-                      </div>
-                    )}
+                      ) : (
+                        <div>
+                          <div className="mx-auto w-12 h-12 text-gray-400 mb-4">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                            </svg>
+                          </div>
+                          {isDragActive ? (
+                            <p className="text-lg text-indigo-600 font-medium">Drop the images here...</p>
+                          ) : (
+                            <>
+                              <p className="text-lg text-gray-700 font-medium mb-2">
+                                Click to select multiple images or drag & drop
+                              </p>
+                              <p className="text-sm text-gray-500 mb-2">
+                                You can select multiple images at once (Ctrl/Cmd + Click)
+                              </p>
+                              <p className="text-xs text-gray-400">
+                                Supported formats: JPEG, PNG, WebP, GIF • Max size: 10MB per file
+                              </p>
+                            </>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                   
                   {/* Traditional file input as fallback */}
@@ -749,9 +796,62 @@ export default function AdminDashboard() {
               <div className="flex gap-3 mt-6">
                 <button
                   type="submit"
-                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700"
+                  className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  disabled={uploadingImage}
                 >
                   {isEditing ? 'Update Product' : 'Add Product'}
+                </button>
+                
+                {/* Debug test button */}
+                <button
+                  type="button"
+                  onClick={async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('🧪 TESTING: Direct form submission bypass');
+                    console.log('Current form data:', formData);
+                    
+                    // Create a minimal test product
+                    const testProduct = {
+                      name: formData.name || 'Test Product from Fixed Admin',
+                      description: formData.description || 'Test product to verify admin dashboard works',
+                      price: formData.price || 99.99,
+                      category: formData.category || 'saree',
+                      imageUrl: '/uploads/sample1.jpg',
+                      images: ['/uploads/sample1.jpg'],
+                      stock: formData.stock || 10,
+                      discount: formData.discount || 0,
+                      position: products.length
+                    };
+                    
+                    try {
+                      const response = await fetch('/api/products', {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          Authorization: `Bearer ${token}`
+                        },
+                        body: JSON.stringify(testProduct)
+                      });
+                      
+                      if (response.ok) {
+                        const result = await response.json();
+                        console.log('✅ Direct API test successful!', result);
+                        setProducts([...products, result]);
+                        alert('✅ Test successful! Product created via direct API call.');
+                      } else {
+                        const error = await response.json();
+                        console.error('❌ Direct API test failed:', error);
+                        alert('❌ Test failed: ' + error.error);
+                      }
+                    } catch (error) {
+                      console.error('❌ Network error:', error);
+                      alert('❌ Network error: ' + error);
+                    }
+                  }}
+                  className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500"
+                >
+                  🧪 Test API
                 </button>
                 
                 {isEditing && (
